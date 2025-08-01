@@ -1,0 +1,25 @@
+{
+	"name": "yokatlas-mcp-server",
+	"version": "1.0.0",
+	"description": "YOKATLAS MCP Server - Access Turkish higher education data via Model Context Protocol",
+	"main": "index.js",
+	"module": "./src/index.ts",
+	"type": "module",
+	"scripts": {
+		"dev": "npx @smithery/cli dev",
+		"build": "npx @smithery/cli build",
+		"deploy": "npx @smithery/cli deploy"
+	},
+	"keywords": [ "mcp", "yokatlas", "education", "turkey", "university" ],
+	"author": "",
+	"license": "MIT",
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.12.1",
+		"zod": "^3.25.46"
+	},
+	"devDependencies": {
+		"@smithery/cli": "^1.2.4",
+		"@types/node": "^22.0.0",
+		"tsx": "^4.19.4"
+	}
+}
