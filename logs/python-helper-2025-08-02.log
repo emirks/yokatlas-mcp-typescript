@@ -1,9 +1,7 @@
-=== YOKATLAS Python Helper Log - 2025-08-02T02:16:25.725474 ===
-[2025-08-02T02:16:26.333009] [DEBUG] Starting with 3 arguments
-[2025-08-02T02:16:26.334321] [DEBUG] Function: search_bachelor_degree_programs
-[2025-08-02T02:16:26.335510] [DEBUG] Parsed params: {"sehir": "Ankara", "puan_turu": "SAY", "universite_turu": "Devlet", "length": 10}
-[2025-08-02T02:16:26.336307] [INFO] Calling function: search_bachelor_degree_programs
-[2025-08-02T02:16:26.337190] [DEBUG] Calling search_bachelor_degree_programs with: {'sehir': 'Ankara', 'puan_turu': 'SAY', 'universite_turu': 'Devlet', 'length': 10}
-[2025-08-02T02:16:26.476534] [DEBUG] Got result type: <class 'dict'>, keys: ['programs', 'total_found', 'search_method', 'fuzzy_matching']
-[2025-08-02T02:16:26.478537] [DEBUG] About to print result: {"programs": [{"yop_kodu": "108410336", "uni_adi": "ORTA DO\u011eU TEKN\u0130K \u00dcN\u0130VERS\u01...
-[2025-08-02T02:16:26.480011] [DEBUG] Result printed successfully
+=== YOKATLAS Python Helper Log - 2025-08-02T02:29:58.908185 ===
+[2025-08-02T02:29:59.612014] [DEBUG] Starting with 3 arguments
+[2025-08-02T02:29:59.613205] [DEBUG] Function: get_bachelor_degree_atlas_details
+[2025-08-02T02:29:59.614370] [DEBUG] Parsed params: {"yop_kodu": "102210011", "year": 2023}
+[2025-08-02T02:29:59.615313] [INFO] Calling function: get_bachelor_degree_atlas_details
+[2025-08-02T02:29:59.796132] [DEBUG] About to print result: {"girdi_gostergeleri": {"genel_bilgiler": {"program_info": {"\u00d6SYM Program Kodu": "102210011", "...
+[2025-08-02T02:29:59.798247] [DEBUG] Result printed successfully
