@@ -1,9 +1,26 @@
 runtime: typescript
+env:
+  PYTHON_EXE: python3
 build:
   beforeBuild: |
+    echo "Installing Node.js dependencies..."
+    npm ci
+    echo "Node.js dependencies installed successfully"
+
     echo "Installing Python dependencies..."
-    python3 -m pip install --upgrade pip
-    python3 -m pip install --break-system-packages -r requirements.txt
+    # Try to detect Python executable and set environment variable
+    if command -v python3 >/dev/null 2>&1; then
+        export PYTHON_EXE=python3
+        python3 -m pip install --upgrade pip
+        python3 -m pip install --break-system-packages -r requirements.txt
+    elif command -v python >/dev/null 2>&1; then
+        export PYTHON_EXE=python
+        python -m pip install --upgrade pip
+        python -m pip install --break-system-packages -r requirements.txt
+    else
+        echo "Error: No Python executable found!"
+        exit 1
+    fi
     echo "Python dependencies installed successfully"
 startCommand:
   type: http
