@@ -22,7 +22,7 @@ RUN npm ci --only=production
 # Create Python virtual environment and install dependencies
 RUN python3 -m venv /opt/venv && \
     /opt/venv/bin/pip install --upgrade pip && \
-    /opt/venv/bin/pip install -r requirements.txt
+    /opt/venv/bin/pip install --force-reinstall --upgrade --no-cache-dir -r requirements.txt
 
 # Set up environment for runtime
 ENV PATH="/opt/venv/bin:$PATH"
