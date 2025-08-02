@@ -137,6 +137,13 @@ def search_bachelor_degree_programs(params: Dict[str, Any]) -> Dict[str, Any]:
         return get_module_unavailable_error("search_bachelor_degree_programs")
 
     try:
+        # Check if sıralama filtering is requested
+        siralama = params.get("siralama") or params.get("sıralama")
+        if siralama:
+            log_to_file(
+                f"Using sıralama filtering with target ranking: {siralama}", "INFO"
+            )
+
         if NEW_SMART_API:
             # Parameters are already in final format from TypeScript side
             # No mapping needed - pass directly to search function
@@ -150,12 +157,26 @@ def search_bachelor_degree_programs(params: Dict[str, Any]) -> Dict[str, Any]:
                 except Exception:
                     validated_results.append(program_data)
 
-            return {
+            result_summary = {
                 "programs": validated_results,
                 "total_found": len(validated_results),
                 "search_method": "smart_search_v0.4.3",
                 "fuzzy_matching": True,
             }
+
+            # Add sıralama filtering info if used
+            if siralama:
+                result_summary["siralama_filter"] = {
+                    "target_ranking": siralama,
+                    "range": [int(siralama * 0.5), int(siralama * 1.5)],
+                    "filtered_results": len(validated_results),
+                }
+                log_to_file(
+                    f"Filtered to {len(validated_results)} programs in ranking range [{int(siralama * 0.5)}, {int(siralama * 1.5)}]",
+                    "INFO",
+                )
+
+            return result_summary
         else:
             # Fallback to legacy API - map final format to legacy format
             legacy_params = {
@@ -169,12 +190,20 @@ def search_bachelor_degree_programs(params: Dict[str, Any]) -> Dict[str, Any]:
                 "page": 1,
             }
 
+            # Add siralama if provided
+            if siralama:
+                legacy_params["siralama"] = siralama
+
             legacy_params = {k: v for k, v in legacy_params.items() if v}
 
             lisans_tercih = YOKATLASLisansTercihSihirbazi(legacy_params)
             result = lisans_tercih.search()
 
-            results_limit = params.get("length", 50)
+            results_limit = (
+                params.get("length", 50)
+                if not siralama
+                else len(result) if isinstance(result, list) else 0
+            )
             return {
                 "programs": (
                     result[:results_limit] if isinstance(result, list) else result

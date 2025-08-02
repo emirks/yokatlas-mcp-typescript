@@ -197,7 +197,8 @@ export default function createStatelessServer({
       ucret: z.enum(["Ücretsiz", "Ücretli", "İÖ-Ücretli", "Burslu", "%50 İndirimli", "%25 İndirimli", "AÖ-Ücretli", "UÖ-Ücretli"]).optional().describe("Fee status: Ücretsiz (Free), Ücretli (Paid), İÖ-Ücretli (Evening-Paid), Burslu (Scholarship), İndirimli (Discounted), AÖ-Ücretli (Open Education-Paid), UÖ-Ücretli (Distance Learning-Paid)"),
       ogretim_turu: z.enum(["Örgün", "İkinci", "Açıköğretim", "Uzaktan"]).optional().describe("Education type: Örgün (Regular), İkinci (Evening), Açıköğretim (Open Education), Uzaktan (Distance Learning)"),
       doluluk: z.enum(["Doldu", "Doldu#", "Dolmadı", "Yeni"]).optional().describe("Program availability: Doldu (Filled), Doldu# (Filled with conditions), Dolmadı (Not filled), Yeni (New program)"),
-      length: z.number().optional().describe("Maximum number of results to return"),
+      siralama: z.number().optional().describe("Target success ranking - when provided, filters results to programs with last year taban başarı sırası between [sıralama * 0.5, sıralama * 1.5] and gets full results"),
+      length: z.number().optional().describe("Maximum number of results to return (ignored when sıralama is provided)"),
     },
     async (args) => {
       log(`🔧 [search_bachelor_degree_programs] Tool called with args: ${JSON.stringify(args)}`, 'DEBUG');
