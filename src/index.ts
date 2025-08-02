@@ -104,35 +104,6 @@ export default function createStatelessServer({
     version: "1.0.0",
   });
 
-  // Health check tool
-  server.tool(
-    "health_check",
-    "Simple health check to verify the server is running",
-    {},
-    async () => {
-      log(`🔧 [health_check] Tool called`, 'DEBUG');
-      try {
-        const result = await callPythonHelper("health_check");
-        log(`✅ [health_check] Success: ${JSON.stringify(result)}`, 'INFO');
-        if (config.debug) {
-          log("Health check result: " + JSON.stringify(result), 'DEBUG');
-        }
-        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-      } catch (error) {
-        log(`❌ [health_check] Error: ${error.message}`, 'ERROR');
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify({ error: error.message }, null, 2),
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
-  );
-
   // Get associate degree atlas details
   server.tool(
     "get_associate_degree_atlas_details",
