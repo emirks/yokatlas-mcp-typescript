@@ -1,5 +1,7 @@
 # YOKATLAS MCP Server
 
+🚀 **[Live Deployment on Smithery](https://smithery.ai/server/@emirks/yokatlas-mcp-typescript)** | 🌐 **[Tercihify Website](https://www.tercihify.com/)**
+
 TypeScript MCP wrapper for the [yokatlas-py](https://github.com/emirks/yokatlas-py) package, providing access to Turkish higher education data through Model Context Protocol.
 
 ## Features
