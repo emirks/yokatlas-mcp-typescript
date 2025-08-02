@@ -11,17 +11,21 @@ TypeScript MCP wrapper for the [yokatlas-py](https://github.com/emirks/yokatlas-
 
 ## Requirements
 
-- Node.js 18+
-- Python 3.8+
-- npm or pnpm
+- Node.js 18+ (handled by Smithery runtime)
+- Python 3.8+ (automatically installed during deployment)
+- npm (for local development)
 
 ## Setup
 
+### Local Development
 1. **Install dependencies:**
    ```bash
    npm ci
    pip install -r requirements.txt
    ```
+
+### Smithery Deployment
+Dependencies are automatically installed during the build process - no manual setup required!
 
 2. **Development:**
    ```bash
