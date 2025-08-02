@@ -22,9 +22,16 @@ COPY requirements.txt ./
 # Install Node.js dependencies
 RUN npm ci --only=production
 
-# Install Python dependencies
-RUN python3 -m pip install --upgrade pip && \
-    python3 -m pip install --break-system-packages -r requirements.txt
+# Create and activate Python virtual environment
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Ensure both python and python3 commands work in venv
+RUN ln -sf /opt/venv/bin/python /opt/venv/bin/python3
+
+# Install Python dependencies in virtual environment
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
 
 # Copy source code
 COPY . .
@@ -37,9 +44,12 @@ EXPOSE $PORT
 
 # Verify installations
 RUN echo "Node.js version: $(node --version)" && \
-    echo "Python version: $(python3 --version)" && \
-    echo "Python location: $(which python3)" && \
-    echo "Python symlink: $(which python)"
+    echo "Python version: $(python --version)" && \
+    echo "Python3 version: $(python3 --version)" && \
+    echo "Python location: $(which python)" && \
+    echo "Python3 location: $(which python3)" && \
+    echo "Pip version: $(pip --version)" && \
+    echo "Virtual env packages: $(pip list)"
 
 # Run the built server
 CMD ["node", ".smithery/index.cjs"] 
