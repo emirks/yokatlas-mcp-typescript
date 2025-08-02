@@ -146,7 +146,7 @@ def search_bachelor_degree_programs(params: Dict[str, Any]) -> Dict[str, Any]:
             for program_data in results:
                 try:
                     program = ProgramInfo(**program_data)
-                    validated_results.append(program.model_dump())
+                    validated_results.append(program.model_dump(by_alias=True))
                 except Exception:
                     validated_results.append(program_data)
 
