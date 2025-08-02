@@ -42,13 +42,11 @@ async function callPythonHelper(functionName: string, params: any = {}): Promise
   const pythonScriptPath = join(process.cwd(), "python_helpers", "yokatlas_helper.py");
   log(`📁 [CallPythonHelper] Python script path: ${pythonScriptPath}`, 'DEBUG');
 
-  // Try different Python executable names (python3 first, then python as fallback)
-  const pythonExe = process.env.PYTHON_EXE || "python3";
   const commandArgs = [pythonScriptPath, functionName, JSON.stringify(params)];
-  log(`🐍 [CallPythonHelper] Executing: ${pythonExe} ${commandArgs.join(' ')}`, 'DEBUG');
+  log(`🐍 [CallPythonHelper] Executing: python3 ${commandArgs.join(' ')}`, 'DEBUG');
 
   return new Promise((resolve, reject) => {
-    const pythonProcess = spawn(pythonExe, commandArgs);
+    const pythonProcess = spawn("python3", commandArgs);
 
     let stdout = "";
     let stderr = "";
@@ -89,57 +87,6 @@ async function callPythonHelper(functionName: string, params: any = {}): Promise
 
     pythonProcess.on("error", (error) => {
       log(`❌ [CallPythonHelper] Process error: ${error.message}`, 'ERROR');
-
-      // If python3 failed and we haven't tried python yet, try python as fallback
-      if (pythonExe === "python3" && error.message.includes("ENOENT")) {
-        log(`🔄 [CallPythonHelper] python3 not found, trying 'python' as fallback`, 'DEBUG');
-        const fallbackProcess = spawn("python", commandArgs);
-
-        let fallbackStdout = "";
-        let fallbackStderr = "";
-
-        fallbackProcess.stdout.on("data", (data) => {
-          const chunk = data.toString();
-          fallbackStdout += chunk;
-          log(`📥 [CallPythonHelper] Python stdout chunk: ${chunk.trim()}`, 'DEBUG');
-        });
-
-        fallbackProcess.stderr.on("data", (data) => {
-          const chunk = data.toString();
-          fallbackStderr += chunk;
-          log(`❌ [CallPythonHelper] Python stderr chunk: ${chunk.trim()}`, 'DEBUG');
-        });
-
-        fallbackProcess.on("close", (code) => {
-          log(`🏁 [CallPythonHelper] Python process closed with code: ${code}`, 'DEBUG');
-
-          if (code !== 0) {
-            log(`❌ [CallPythonHelper] Error - Full stderr: ${fallbackStderr}`, 'ERROR');
-            reject(new Error(`Python process exited with code ${code}: ${fallbackStderr}`));
-            return;
-          }
-
-          log(`📥 [CallPythonHelper] Full stdout: ${fallbackStdout.trim()}`, 'DEBUG');
-
-          try {
-            const result = JSON.parse(fallbackStdout);
-            log(`✅ [CallPythonHelper] Parsed result: ${JSON.stringify(result, null, 2)}`, 'DEBUG');
-            resolve(result);
-          } catch (parseError) {
-            log(`❌ [CallPythonHelper] JSON parse error: ${parseError}`, 'ERROR');
-            log(`📥 [CallPythonHelper] Raw output that failed to parse: ${fallbackStdout}`, 'ERROR');
-            reject(new Error(`Failed to parse JSON output: ${parseError}\nOutput: ${fallbackStdout}`));
-          }
-        });
-
-        fallbackProcess.on("error", (fallbackError) => {
-          log(`❌ [CallPythonHelper] Fallback python process error: ${fallbackError.message}`, 'ERROR');
-          reject(new Error(`Failed to start Python process with both 'python3' and 'python': ${fallbackError.message}`));
-        });
-
-        return;
-      }
-
       reject(new Error(`Failed to start Python process: ${error.message}`));
     });
   });

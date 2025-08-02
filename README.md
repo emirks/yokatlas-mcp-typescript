@@ -25,7 +25,7 @@ TypeScript MCP wrapper for the [yokatlas-py](https://github.com/emirks/yokatlas-
    ```
 
 ### Smithery Deployment
-Dependencies are automatically installed during the build process - no manual setup required!
+Uses **Custom Deploy** with a custom Dockerfile for full control over the build environment. Dependencies are automatically installed during Docker build - no manual setup required!
 
 2. **Development:**
    ```bash
