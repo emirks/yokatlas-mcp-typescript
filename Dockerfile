@@ -22,16 +22,17 @@ COPY requirements.txt ./
 # Install Node.js dependencies
 RUN npm ci --only=production
 
-# Create and activate Python virtual environment
-RUN python3 -m venv /opt/venv
+# Create Python virtual environment and install dependencies
+RUN python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install --upgrade pip && \
+    /opt/venv/bin/pip install -r requirements.txt
+
+# Set up environment for runtime
 ENV PATH="/opt/venv/bin:$PATH"
+ENV VIRTUAL_ENV="/opt/venv"
 
 # Ensure both python and python3 commands work in venv
 RUN ln -sf /opt/venv/bin/python /opt/venv/bin/python3
-
-# Install Python dependencies in virtual environment
-RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
 
 # Copy source code
 COPY . .
@@ -44,12 +45,12 @@ EXPOSE $PORT
 
 # Verify installations
 RUN echo "Node.js version: $(node --version)" && \
-    echo "Python version: $(python --version)" && \
-    echo "Python3 version: $(python3 --version)" && \
+    echo "Python version: $(/opt/venv/bin/python --version)" && \
+    echo "Python3 version: $(/opt/venv/bin/python3 --version)" && \
     echo "Python location: $(which python)" && \
     echo "Python3 location: $(which python3)" && \
-    echo "Pip version: $(pip --version)" && \
-    echo "Virtual env packages: $(pip list)"
+    echo "Pip version: $(/opt/venv/bin/pip --version)" && \
+    echo "Virtual env packages: $(/opt/venv/bin/pip list)"
 
 # Run the built server
 CMD ["node", ".smithery/index.cjs"] 
