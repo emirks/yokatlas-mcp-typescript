@@ -9,9 +9,6 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Create symlink for python command
-RUN ln -sf /usr/bin/python3 /usr/bin/python
-
 # Set working directory
 WORKDIR /app
 
@@ -31,9 +28,6 @@ RUN python3 -m venv /opt/venv && \
 ENV PATH="/opt/venv/bin:$PATH"
 ENV VIRTUAL_ENV="/opt/venv"
 
-# Ensure both python and python3 commands work in venv
-RUN ln -sf /opt/venv/bin/python /opt/venv/bin/python3
-
 # Copy source code
 COPY . .
 
@@ -45,12 +39,13 @@ EXPOSE $PORT
 
 # Verify installations
 RUN echo "Node.js version: $(node --version)" && \
-    echo "Python version: $(/opt/venv/bin/python --version)" && \
-    echo "Python3 version: $(/opt/venv/bin/python3 --version)" && \
+    echo "Virtual env contents: $(ls -la /opt/venv/bin/)" && \
+    echo "Python version: $(python --version)" && \
+    echo "Python3 version: $(python3 --version)" && \
     echo "Python location: $(which python)" && \
     echo "Python3 location: $(which python3)" && \
-    echo "Pip version: $(/opt/venv/bin/pip --version)" && \
-    echo "Virtual env packages: $(/opt/venv/bin/pip list)"
+    echo "Pip version: $(pip --version)" && \
+    echo "Virtual env packages: $(pip list)"
 
 # Run the built server
 CMD ["node", ".smithery/index.cjs"] 
