@@ -100,9 +100,37 @@ export default function createStatelessServer({
   log(`🚀 [Server] Creating YOKATLAS MCP Server with config: ${JSON.stringify(config)}`, 'INFO');
 
   const server = new McpServer({
-    name: "YOKATLAS API Server",
-    version: "1.0.0",
+    name: "YOKATLAS Local Search Server",
+    version: "2.0.0",
   });
+
+  // Health check tool
+  server.tool(
+    "health_check",
+    "Check the health and capabilities of the YOKATLAS server, including search method and data availability",
+    {},
+    async () => {
+      log(`🔧 [health_check] Tool called`, 'DEBUG');
+      try {
+        const result = await callPythonHelper("health_check", {});
+        log(`✅ [health_check] Success - status: ${result.status}`, 'INFO');
+        
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        log(`❌ [health_check] Error: ${errorMessage}`, 'ERROR');
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ error: errorMessage }, null, 2),
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
 
   // Get associate degree atlas details
   server.tool(
@@ -130,12 +158,13 @@ export default function createStatelessServer({
 
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       } catch (error) {
-        log(`❌ [get_associate_degree_atlas_details] Error: ${error.message}`, 'ERROR');
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        log(`❌ [get_associate_degree_atlas_details] Error: ${errorMessage}`, 'ERROR');
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify({ error: error.message }, null, 2),
+              text: JSON.stringify({ error: errorMessage }, null, 2),
             },
           ],
           isError: true,
@@ -170,12 +199,13 @@ export default function createStatelessServer({
 
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       } catch (error) {
-        log(`❌ [get_bachelor_degree_atlas_details] Error: ${error.message}`, 'ERROR');
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        log(`❌ [get_bachelor_degree_atlas_details] Error: ${errorMessage}`, 'ERROR');
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify({ error: error.message }, null, 2),
+              text: JSON.stringify({ error: errorMessage }, null, 2),
             },
           ],
           isError: true,
@@ -187,7 +217,7 @@ export default function createStatelessServer({
   // Search bachelor degree programs
   server.tool(
     "search_bachelor_degree_programs",
-    "Search for bachelor's degree programs with smart fuzzy matching and user-friendly parameters",
+    "Search for bachelor's degree programs using LOCAL DATA with instant results, smart fuzzy matching, and bell curve sampling for large result sets",
     {
       universite: z.string().optional().describe("University name with fuzzy matching support (e.g., 'boğaziçi' → 'BOĞAZİÇİ ÜNİVERSİTESİ')"),
       program: z.string().optional().describe("Program/department name with partial matching (e.g., 'bilgisayar' finds all computer programs)"),
@@ -197,8 +227,8 @@ export default function createStatelessServer({
       ucret: z.enum(["Ücretsiz", "Ücretli", "İÖ-Ücretli", "Burslu", "%50 İndirimli", "%25 İndirimli", "AÖ-Ücretli", "UÖ-Ücretli"]).optional().describe("Fee status: Ücretsiz (Free), Ücretli (Paid), İÖ-Ücretli (Evening-Paid), Burslu (Scholarship), İndirimli (Discounted), AÖ-Ücretli (Open Education-Paid), UÖ-Ücretli (Distance Learning-Paid)"),
       ogretim_turu: z.enum(["Örgün", "İkinci", "Açıköğretim", "Uzaktan"]).optional().describe("Education type: Örgün (Regular), İkinci (Evening), Açıköğretim (Open Education), Uzaktan (Distance Learning)"),
       doluluk: z.enum(["Doldu", "Doldu#", "Dolmadı", "Yeni"]).optional().describe("Program availability: Doldu (Filled), Doldu# (Filled with conditions), Dolmadı (Not filled), Yeni (New program)"),
-      siralama: z.number().optional().describe("Target success ranking - when provided, filters results to programs with last year taban başarı sırası between [sıralama * 0.5, sıralama * 1.5] and gets full results"),
-      length: z.number().optional().describe("Maximum number of results to return (ignored when sıralama is provided)"),
+      siralama: z.number().optional().describe("Target success ranking - applies bell curve sampling centered at this ranking. Programs closer to this ranking are more likely to be selected. Automatically filters to range [sıralama * 0.5, sıralama * 1.5]"),
+      max_results: z.number().optional().describe("Maximum number of results to return. If more results are found, bell curve sampling is applied for representative distribution (default: 100)"),
     },
     async (args) => {
       log(`🔧 [search_bachelor_degree_programs] Tool called with args: ${JSON.stringify(args)}`, 'DEBUG');
@@ -207,19 +237,20 @@ export default function createStatelessServer({
         log(`📋 [search_bachelor_degree_programs] Final params for yokatlas_py: ${JSON.stringify(args)}`, 'DEBUG');
         const result = await callPythonHelper("search_bachelor_degree_programs", args);
 
-        log(`✅ [search_bachelor_degree_programs] Success - found ${result.programs?.length || 0} programs`, 'INFO');
+        log(`✅ [search_bachelor_degree_programs] Success`, 'INFO');
         if (config.debug) {
-          log("Bachelor degree search result: " + JSON.stringify(result), 'DEBUG');
+          log("Bachelor degree search result: " + result, 'DEBUG');
         }
 
-        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+        return { content: [{ type: "text", text: result }] };
       } catch (error) {
-        log(`❌ [search_bachelor_degree_programs] Error: ${error.message}`, 'ERROR');
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        log(`❌ [search_bachelor_degree_programs] Error: ${errorMessage}`, 'ERROR');
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify({ error: error.message }, null, 2),
+              text: JSON.stringify({ error: errorMessage }, null, 2),
             },
           ],
           isError: true,
@@ -231,7 +262,7 @@ export default function createStatelessServer({
   // Search associate degree programs
   server.tool(
     "search_associate_degree_programs",
-    "Search for associate degree (önlisans) programs with smart fuzzy matching and user-friendly parameters",
+    "Search for associate degree (önlisans) programs using LOCAL DATA with instant results, smart fuzzy matching, and bell curve sampling for large result sets",
     {
       university: z.string().optional().describe("University name with fuzzy matching support (e.g., 'anadolu' → 'ANADOLU ÜNİVERSİTESİ')"),
       program: z.string().optional().describe("Program name with partial matching (e.g., 'turizm' finds all tourism programs)"),
@@ -240,7 +271,7 @@ export default function createStatelessServer({
       fee_type: z.enum(["Ücretsiz", "Ücretli", "İÖ-Ücretli", "Burslu", "%50 İndirimli", "%25 İndirimli", "AÖ-Ücretli", "UÖ-Ücretli"]).optional().describe("Fee status: Ücretsiz (Free), Ücretli (Paid), İÖ-Ücretli (Evening-Paid), Burslu (Scholarship), İndirimli (Discounted), AÖ-Ücretli (Open Education-Paid), UÖ-Ücretli (Distance Learning-Paid)"),
       education_type: z.enum(["Örgün", "İkinci", "Açıköğretim", "Uzaktan"]).optional().describe("Education type: Örgün (Regular), İkinci (Evening), Açıköğretim (Open Education), Uzaktan (Distance Learning)"),
       availability: z.enum(["Doldu", "Doldu#", "Dolmadı", "Yeni"]).optional().describe("Program availability: Doldu (Filled), Doldu# (Filled with conditions), Dolmadı (Not filled), Yeni (New program)"),
-      results_limit: z.number().optional().describe("Maximum number of results to return"),
+      max_results: z.number().optional().describe("Maximum number of results to return. If more results are found, bell curve sampling is applied for representative distribution (default: 100)"),
     },
     async (args) => {
       log(`🔧 [search_associate_degree_programs] Tool called with args: ${JSON.stringify(args)}`, 'DEBUG');
@@ -255,25 +286,26 @@ export default function createStatelessServer({
           ucret: args.fee_type || "",
           ogretim_turu: args.education_type || "",
           doluluk: args.availability || "",
-          length: args.results_limit || 50,
+          length: args.max_results || 100,
         };
 
         log(`📋 [search_associate_degree_programs] Final params for yokatlas_py: ${JSON.stringify(finalParams)}`, 'DEBUG');
         const result = await callPythonHelper("search_associate_degree_programs", finalParams);
 
-        log(`✅ [search_associate_degree_programs] Success - found ${result.programs?.length || 0} programs`, 'INFO');
+        log(`✅ [search_associate_degree_programs] Success`, 'INFO');
         if (config.debug) {
-          log("Associate degree search result: " + JSON.stringify(result), 'DEBUG');
+          log("Associate degree search result: " + result, 'DEBUG');
         }
 
-        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+        return { content: [{ type: "text", text: result }] };
       } catch (error) {
-        log(`❌ [search_associate_degree_programs] Error: ${error.message}`, 'ERROR');
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        log(`❌ [search_associate_degree_programs] Error: ${errorMessage}`, 'ERROR');
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify({ error: error.message }, null, 2),
+              text: JSON.stringify({ error: errorMessage }, null, 2),
             },
           ],
           isError: true,

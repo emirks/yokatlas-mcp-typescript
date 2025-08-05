@@ -37,43 +37,20 @@ def log_to_file(message: str, level: str = "INFO"):
 # Initialize logging
 LOG_FILE = setup_logging()
 
-# Import the yokatlas_py functions with graceful fallback
-NEW_SMART_API = False
-YOKATLAS_AVAILABLE = False
-
+# Import the local search functions
 try:
-    from yokatlas_py import search_lisans_programs, search_onlisans_programs
+    from yokatlas_py.local_search_wrappers import (
+        search_local_lisans_programs,
+        search_local_onlisans_programs,
+    )
     from yokatlas_py import YOKATLASLisansAtlasi, YOKATLASOnlisansAtlasi
-    from yokatlas_py.models import SearchParams, ProgramInfo
+    from yokatlas_py.models import ProgramInfo
 
-    NEW_SMART_API = True
     YOKATLAS_AVAILABLE = True
-except ImportError:
-    try:
-        from yokatlas_py import (
-            YOKATLASLisansTercihSihirbazi,
-            YOKATLASOnlisansTercihSihirbazi,
-        )
-        from yokatlas_py import YOKATLASLisansAtlasi, YOKATLASOnlisansAtlasi
-        from yokatlas_py.models import SearchParams, ProgramInfo
-
-        NEW_SMART_API = False
-        YOKATLAS_AVAILABLE = True
-    except ImportError:
-        try:
-            from yokatlas_py.lisansatlasi import YOKATLASLisansAtlasi
-            from yokatlas_py.lisanstercihsihirbazi import YOKATLASLisansTercihSihirbazi
-            from yokatlas_py.onlisansatlasi import YOKATLASOnlisansAtlasi
-            from yokatlas_py.onlisanstercihsihirbazi import (
-                YOKATLASOnlisansTercihSihirbazi,
-            )
-
-            NEW_SMART_API = False
-            YOKATLAS_AVAILABLE = True
-        except ImportError:
-            # yokatlas_py is not available - provide graceful fallback
-            NEW_SMART_API = False
-            YOKATLAS_AVAILABLE = False
+    log_to_file("LOCAL SEARCH API loaded successfully", "INFO")
+except ImportError as e:
+    YOKATLAS_AVAILABLE = False
+    log_to_file(f"Failed to load yokatlas_py local search: {e}", "ERROR")
 
 
 def get_module_unavailable_error(function_name: str) -> Dict[str, Any]:
@@ -90,15 +67,15 @@ def get_module_unavailable_error(function_name: str) -> Dict[str, Any]:
 async def health_check() -> Dict[str, Any]:
     """Simple health check to verify the server is running."""
     return {
-        "status": "healthy",
-        "server": "YOKATLAS API Server",
-        "api_version": "v1.0",
-        "smart_search": NEW_SMART_API,
+        "status": "healthy" if YOKATLAS_AVAILABLE else "error",
+        "server": "YOKATLAS Local Search Server",
+        "api_version": "v2.0",
+        "search_method": "local_search_only",
         "yokatlas_available": YOKATLAS_AVAILABLE,
         "message": (
-            "All systems operational"
+            "Local search operational - using cached JSON data"
             if YOKATLAS_AVAILABLE
-            else "yokatlas_py module not available - install required for full functionality"
+            else "yokatlas_py local search module not available - install required"
         ),
     }
 
@@ -144,141 +121,63 @@ def search_bachelor_degree_programs(params: Dict[str, Any]) -> Dict[str, Any]:
                 f"Using sıralama filtering with target ranking: {siralama}", "INFO"
             )
 
-        if NEW_SMART_API:
-            # Parameters are already in final format from TypeScript side
-            # No mapping needed - pass directly to search function
-            results = search_lisans_programs(params, smart_search=True)
+        # Use local search with bell curve sampling
+        max_results = params.get("max_results", 100)
+        if siralama:
+            # When siralama is used, we want more results for bell curve sampling
+            max_results = min(max_results, 200)  # Cap to prevent memory issues
 
-            validated_results = []
-            for program_data in results:
-                try:
-                    program = ProgramInfo(**program_data)
-                    validated_results.append(program.model_dump(by_alias=True))
-                except Exception:
-                    validated_results.append(program_data)
+        search_result = search_local_lisans_programs(
+            params, smart_search=True, max_results=max_results, return_formatted=True
+        )
 
-            result_summary = {
-                "programs": validated_results,
-                "total_found": len(validated_results),
-                "search_method": "smart_search_v0.4.3",
-                "fuzzy_matching": True,
-            }
+        # Return just the formatted string for clean output
+        formatted_output = search_result["formatted"]
 
-            # Add sıralama filtering info if used
-            if siralama:
-                result_summary["siralama_filter"] = {
-                    "target_ranking": siralama,
-                    "range": [int(siralama * 0.5), int(siralama * 1.5)],
-                    "filtered_results": len(validated_results),
-                }
-                log_to_file(
-                    f"Filtered to {len(validated_results)} programs in ranking range [{int(siralama * 0.5)}, {int(siralama * 1.5)}]",
-                    "INFO",
-                )
+        # Add search method info at the end
+        method_info = (
+            f"\n\n🔍 Search method: Local search v2.0 with bell curve sampling"
+        )
+        if siralama:
+            method_info += f" (centered at ranking {siralama})"
+        method_info += f"\n📊 Total found: {search_result['total_found']} programs"
 
-            return result_summary
-        else:
-            # Fallback to legacy API - map final format to legacy format
-            legacy_params = {
-                "uni_adi": params.get("universite", ""),
-                "program_adi": params.get("program", ""),
-                "sehir_adi": params.get("sehir", ""),
-                "puan_turu": params.get("puan_turu", "say"),
-                "universite_turu": params.get("universite_turu", ""),
-                "ucret_burs": params.get("ucret", ""),
-                "ogretim_turu": params.get("ogretim_turu", ""),
-                "page": 1,
-            }
-
-            # Add siralama if provided
-            if siralama:
-                legacy_params["siralama"] = siralama
-
-            legacy_params = {k: v for k, v in legacy_params.items() if v}
-
-            lisans_tercih = YOKATLASLisansTercihSihirbazi(legacy_params)
-            result = lisans_tercih.search()
-
-            results_limit = (
-                params.get("length", 50)
-                if not siralama
-                else len(result) if isinstance(result, list) else 0
-            )
-            return {
-                "programs": (
-                    result[:results_limit] if isinstance(result, list) else result
-                ),
-                "total_found": len(result) if isinstance(result, list) else 0,
-                "search_method": "legacy_api",
-                "fuzzy_matching": False,
-            }
+        return formatted_output + method_info
 
     except Exception as e:
         return {
             "error": str(e),
-            "search_method": "smart_search" if NEW_SMART_API else "legacy_api",
+            "search_method": "local_search_v2.0",
             "parameters_used": params,
         }
 
 
 def search_associate_degree_programs(params: Dict[str, Any]) -> Dict[str, Any]:
-    """Search for associate degree programs with smart fuzzy matching."""
+    """Search for associate degree programs using local data with bell curve sampling."""
     if not YOKATLAS_AVAILABLE:
         return get_module_unavailable_error("search_associate_degree_programs")
 
     try:
-        if NEW_SMART_API:
-            # Parameters are already in final format from TypeScript side
-            # No mapping needed - pass directly to search function
-            results = search_onlisans_programs(params, smart_search=True)
+        # Use local search with bell curve sampling
+        max_results = params.get("max_results", 100)
 
-            return {
-                "programs": results,
-                "total_found": len(results),
-                "search_method": "smart_search_v0.4.3",
-                "fuzzy_matching": True,
-                "program_type": "associate_degree",
-            }
-        else:
-            # Fallback to legacy API - map final format to legacy format
-            legacy_params = {
-                "yop_kodu": "",
-                "uni_adi": params.get("universite", ""),
-                "program_adi": params.get("program", ""),
-                "sehir_adi": params.get("sehir", ""),
-                "universite_turu": params.get("universite_turu", ""),
-                "ucret_burs": params.get("ucret", ""),
-                "ogretim_turu": params.get("ogretim_turu", ""),
-                "doluluk": params.get("doluluk", ""),
-                "ust_puan": 550.0,
-                "alt_puan": 150.0,
-                "page": 1,
-            }
+        search_result = search_local_onlisans_programs(
+            params, smart_search=True, max_results=max_results, return_formatted=True
+        )
 
-            legacy_params = {
-                k: v
-                for k, v in legacy_params.items()
-                if v or isinstance(v, (int, float))
-            }
+        # Return just the formatted string for clean output
+        formatted_output = search_result["formatted"]
 
-            onlisans_tercih = YOKATLASOnlisansTercihSihirbazi(legacy_params)
-            result = onlisans_tercih.search()
+        # Add search method info at the end
+        method_info = f"\n\n🔍 Search method: Local search v2.0 with bell curve sampling (Associate Degree)"
+        method_info += f"\n📊 Total found: {search_result['total_found']} programs"
 
-            results_limit = params.get("length", 50)
-            return {
-                "programs": (
-                    result[:results_limit] if isinstance(result, list) else result
-                ),
-                "total_found": len(result) if isinstance(result, list) else 0,
-                "search_method": "legacy_api",
-                "fuzzy_matching": False,
-                "program_type": "associate_degree",
-            }
+        return formatted_output + method_info
 
     except Exception as e:
         return {
             "error": str(e),
-            "search_method": "smart_search" if NEW_SMART_API else "legacy_api",
+            "search_method": "local_search_v2.0",
             "parameters_used": params,
             "program_type": "associate_degree",
         }
