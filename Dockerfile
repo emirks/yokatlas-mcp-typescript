@@ -14,15 +14,15 @@ WORKDIR /app
 
 # Copy package files first for better Docker layer caching
 COPY package*.json ./
-COPY requirements.txt ./
 
 # Install Node.js dependencies
 RUN npm ci --only=production
 
-# Create Python virtual environment and install dependencies
+# Create Python virtual environment and clone/install yokatlas_py
 RUN python3 -m venv /opt/venv && \
     /opt/venv/bin/pip install --upgrade pip && \
-    /opt/venv/bin/pip install --force-reinstall --upgrade --no-cache-dir -r requirements.txt
+    git clone https://github.com/emirks/yokatlas-py.git /app/yokatlas-py && \
+    /opt/venv/bin/pip install -e /app/yokatlas-py
 
 # Set up environment for runtime
 ENV PATH="/opt/venv/bin:$PATH"
