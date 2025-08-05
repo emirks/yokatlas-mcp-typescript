@@ -18,6 +18,10 @@ COPY package*.json ./
 # Install Node.js dependencies
 RUN npm ci --only=production
 
+# Add cache-busting layer to force git clone of latest commit
+# This will invalidate cache when there are new commits to yokatlas-py repo
+ADD https://api.github.com/repos/emirks/yokatlas-py/git/refs/heads/main version.json
+
 # Create Python virtual environment and clone/install yokatlas_py
 RUN python3 -m venv /opt/venv && \
     /opt/venv/bin/pip install --upgrade pip && \
