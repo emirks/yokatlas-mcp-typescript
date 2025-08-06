@@ -158,8 +158,19 @@ def search_associate_degree_programs(params: Dict[str, Any]) -> Dict[str, Any]:
         return get_module_unavailable_error("search_associate_degree_programs")
 
     try:
+        # Check if sıralama filtering is requested
+        siralama = params.get("siralama") or params.get("sıralama")
+        if siralama:
+            log_to_file(
+                f"Using sıralama filtering with target ranking: {siralama} (Associate Degree - TYT based)",
+                "INFO",
+            )
+
         # Use local search with bell curve sampling
         max_results = params.get("max_results", 100)
+        if siralama:
+            # When siralama is used, we want more results for bell curve sampling
+            max_results = min(max_results, 200)  # Cap to prevent memory issues
 
         search_result = search_local_onlisans_programs(
             params, smart_search=True, max_results=max_results, return_formatted=True
@@ -169,7 +180,9 @@ def search_associate_degree_programs(params: Dict[str, Any]) -> Dict[str, Any]:
         formatted_output = search_result["formatted"]
 
         # Add search method info at the end
-        method_info = f"\n\n🔍 Search method: Local search v2.0 with bell curve sampling (Associate Degree)"
+        method_info = f"\n\n🔍 Search method: Local search v2.0 with bell curve sampling (Associate Degree - TYT)"
+        if siralama:
+            method_info += f" (centered at ranking {siralama})"
         method_info += f"\n📊 Total found: {search_result['total_found']} programs"
 
         return formatted_output + method_info

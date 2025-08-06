@@ -101,7 +101,7 @@ export default function createStatelessServer({
 
   const server = new McpServer({
     name: "YOKATLAS Local Search Server",
-    version: "2.0.0",
+    version: "2.0.1",
   });
 
   // Health check tool
@@ -271,6 +271,7 @@ export default function createStatelessServer({
       fee_type: z.enum(["Ücretsiz", "Ücretli", "İÖ-Ücretli", "Burslu", "%50 İndirimli", "%25 İndirimli", "AÖ-Ücretli", "UÖ-Ücretli"]).optional().describe("Fee status: Ücretsiz (Free), Ücretli (Paid), İÖ-Ücretli (Evening-Paid), Burslu (Scholarship), İndirimli (Discounted), AÖ-Ücretli (Open Education-Paid), UÖ-Ücretli (Distance Learning-Paid)"),
       education_type: z.enum(["Örgün", "İkinci", "Açıköğretim", "Uzaktan"]).optional().describe("Education type: Örgün (Regular), İkinci (Evening), Açıköğretim (Open Education), Uzaktan (Distance Learning)"),
       availability: z.enum(["Doldu", "Doldu#", "Dolmadı", "Yeni"]).optional().describe("Program availability: Doldu (Filled), Doldu# (Filled with conditions), Dolmadı (Not filled), Yeni (New program)"),
+      siralama: z.number().optional().describe("Target success ranking - applies bell curve sampling centered at this ranking. Programs closer to this ranking are more likely to be selected. Automatically filters to range [sıralama * 0.5, sıralama * 1.5]. Associate degree programs use TYT-based rankings."),
       max_results: z.number().optional().describe("Maximum number of results to return. If more results are found, bell curve sampling is applied for representative distribution (default: 100)"),
     },
     async (args) => {
@@ -286,7 +287,8 @@ export default function createStatelessServer({
           ucret: args.fee_type || "",
           ogretim_turu: args.education_type || "",
           doluluk: args.availability || "",
-          length: args.max_results || 100,
+          siralama: args.siralama, // Support for bell curve sampling with sıralama
+          max_results: args.max_results || 100,
         };
 
         log(`📋 [search_associate_degree_programs] Final params for yokatlas_py: ${JSON.stringify(finalParams)}`, 'DEBUG');
