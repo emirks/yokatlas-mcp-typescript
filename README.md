@@ -1,4 +1,5 @@
 # YOKATLAS MCP Server
+[![smithery badge](https://smithery.ai/badge/@emirks/yokatlas-mcp-typescript)](https://smithery.ai/server/@emirks/yokatlas-mcp-typescript)
 
 🚀 **[Live Deployment on Smithery](https://smithery.ai/server/@emirks/yokatlas-mcp-typescript)** | 🌐 **[Tercihify Website](https://www.tercihify.com/)**
 
@@ -18,6 +19,14 @@ TypeScript MCP wrapper for the [yokatlas-py](https://github.com/emirks/yokatlas-
 - npm (for local development)
 
 ## Setup
+
+### Installing via Smithery
+
+To install YOKATLAS MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@emirks/yokatlas-mcp-typescript):
+
+```bash
+npx -y @smithery/cli install @emirks/yokatlas-mcp-typescript --client claude
+```
 
 ### Local Development
 1. **Install dependencies:**
